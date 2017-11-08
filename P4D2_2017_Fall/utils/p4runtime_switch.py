@@ -30,7 +30,8 @@ class P4RuntimeSwitch(P4Switch):
 
     def __init__(self, name, sw_path = None, json_path = None,
                  grpc_port = None,
-                 pcap_dump = False,
+                 pcap_dir = None,
+                 log_dir = None,
                  log_console = False,
                  verbose = False,
                  device_id = None,
@@ -62,9 +63,12 @@ class P4RuntimeSwitch(P4Switch):
             exit(1)
 
         self.verbose = verbose
-        logfile = "/tmp/p4s.{}.log".format(self.name)
-        self.output = open(logfile, 'w')
-        self.pcap_dump = pcap_dump
+        if not log_dir:
+            log_dir = '/tmp'
+        logfilename = "p4s.{}.log".format(self.name)
+        self.logfile = os.path.join(log_dir, logfilename)
+        self.output = open(self.logfile, 'w')
+        self.pcap_dir = pcap_dir
         self.enable_debugger = enable_debugger
         self.log_console = log_console
         if device_id is not None:
@@ -90,8 +94,8 @@ class P4RuntimeSwitch(P4Switch):
         for port, intf in self.intfs.items():
             if not intf.IP():
                 args.extend(['-i', str(port) + "@" + intf.name])
-        if self.pcap_dump:
-            args.append("--pcap")
+        if self.pcap_dir:
+            args.extend(["--pcap", str(self.pcap_dir)])
         if self.nanomsg:
             args.extend(['--nanolog', self.nanomsg])
         args.extend(['--device-id', str(self.device_id)])
@@ -109,7 +113,7 @@ class P4RuntimeSwitch(P4Switch):
         cmd = ' '.join(args)
         info(cmd + "\n")
 
-        logfile = "/tmp/p4s.{}.log".format(self.name)
+        logfile = self.logfile
         pid = None
         with tempfile.NamedTemporaryFile() as f:
             self.cmd(cmd + ' >' + logfile + ' 2>&1 & echo $! >> ' + f.name)

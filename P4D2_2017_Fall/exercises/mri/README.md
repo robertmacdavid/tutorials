@@ -217,7 +217,7 @@ In this case, `make` will log the CLI tool output in the `logs` directory.
 Use these error messages to fix your `mri.p4` implementation.
 3. `mri.p4` compiles, and the control plane rules are installed, but
 the switch does not process packets in the desired way. The
-`/tmp/p4s.<switch-name>.log` files contain trace messages describing
+`logs/p4s.<switch-name>.log` files contain trace messages describing
 how each switch processes each packet. The output is detailed and can
 help pinpoint logic errors in your implementation.  The
 `build/<switch-name>-<interface-name>.pcap` also contains the pcap of

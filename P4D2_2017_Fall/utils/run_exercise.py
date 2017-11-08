@@ -256,7 +256,8 @@ class ExerciseRunner:
                 sw_path=self.bmv2_exe,
                 json_path=self.switch_json,
                 log_console=True,
-                pcap_dump=self.pcap_dir)
+                pcap_dir=self.pcap_dir,
+                log_dir=self.log_dir)
 
         self.net = Mininet(topo = self.topo,
                       link = TCLink,

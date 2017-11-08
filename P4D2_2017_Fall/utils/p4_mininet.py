@@ -31,6 +31,8 @@ class P4Host(Host):
     def config(self, **params):
         r = super(Host, self).config(**params)
 
+        # Causes a shutdown crash in mininet due to namespace collision in
+        # multi-switch networks
         self.defaultIntf().rename("eth0")
 
         for off in ["rx", "tx", "sg"]:
@@ -60,11 +62,12 @@ class P4Switch(Switch):
 
     def __init__(self, name, sw_path = None, json_path = None,
                  thrift_port = None,
-                 pcap_dump = False,
+                 pcap_dir = None,
                  log_console = False,
                  verbose = False,
                  device_id = None,
                  enable_debugger = False,
+                 log_dir = None,
                  **kwargs):
         Switch.__init__(self, name, **kwargs)
         assert(sw_path)
@@ -78,13 +81,16 @@ class P4Switch(Switch):
         self.sw_path = sw_path
         self.json_path = json_path
         self.verbose = verbose
-        logfile = "/tmp/p4s.{}.log".format(self.name)
-        self.output = open(logfile, 'w')
+        if not log_dir:
+            log_dir = '/tmp'
+        logfilename = 'p4s.{}.log'.format(self.name)
+        self.logfile = os.path.join(log_dir, logfilename)
+        self.output = open(self.logfile, 'w')
         self.thrift_port = thrift_port
         if check_listening_on_port(self.thrift_port):
             error('%s cannot bind port %d because it is bound by another process\n' % (self.name, self.grpc_port))
             exit(1)
-        self.pcap_dump = pcap_dump
+        self.pcap_dir = pcap_dir
         self.enable_debugger = enable_debugger
         self.log_console = log_console
         if device_id is not None:
@@ -118,8 +124,8 @@ class P4Switch(Switch):
         for port, intf in self.intfs.items():
             if not intf.IP():
                 args.extend(['-i', str(port) + "@" + intf.name])
-        if self.pcap_dump:
-            args.append("--pcap")
+        if self.pcap_dir:
+            args.extend(["--pcap", str(self.pcap_dir)])
             # args.append("--useFiles")
         if self.thrift_port:
             args.extend(['--thrift-port', str(self.thrift_port)])
@@ -132,7 +138,8 @@ class P4Switch(Switch):
             args.append("--debugger")
         if self.log_console:
             args.append("--log-console")
-        logfile = "/tmp/p4s.{}.log".format(self.name)
+        #logfile = "/tmp/p4s.{}.log".format(self.name)
+        logfile = self.logfile
         info(' '.join(args) + "\n")
 
         pid = None
